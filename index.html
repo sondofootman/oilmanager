@@ -281,28 +281,36 @@
                 });
             }
             
-            // Calculate when the next oil change is due
             calculateNextChange(customer) {
-                const kmDriven = customer.currentOdometer - customer.lastOdometer;
-                const kmRemaining = customer.oilInterval - kmDriven;
-                
-                // Estimate date based on average driving (assuming 50km/day)
-                const daysSinceLastChange = Math.floor((new Date() - new Date(customer.lastChangeDate)) / (1000 * 60 * 60 * 24));
-                const avgKmPerDay = kmDriven / Math.max(1, daysSinceLastChange);
-                const daysRemaining = Math.floor(kmRemaining / Math.max(1, avgKmPerDay));
-                
-                const nextChangeDate = new Date();
-                nextChangeDate.setDate(nextChangeDate.getDate() + daysRemaining);
-                
-                return {
-                    kmDriven,
-                    kmRemaining,
-                    nextChangeDate: nextChangeDate.toISOString().split('T')[0],
-                    daysRemaining,
-                    status: kmRemaining <= 0 ? 'overdue' : kmRemaining <= (customer.oilInterval * 0.2) ? 'dueSoon' : 'ok'
-                };
-            }
-            
+    const kmDriven = customer.currentOdometer - customer.lastOdometer;
+    const kmRemaining = customer.oilInterval - kmDriven;
+    const targetOdometer = customer.lastOdometer + customer.oilInterval;
+
+    // Optional: Project next date based on real daily average
+    const daysSinceLastChange = Math.floor((new Date() - new Date(customer.lastChangeDate)) / (1000 * 60 * 60 * 24));
+    const avgKmPerDay = kmDriven / Math.max(1, daysSinceLastChange);
+    const daysRemaining = Math.floor(kmRemaining / Math.max(1, avgKmPerDay));
+    const nextChangeDate = new Date();
+    nextChangeDate.setDate(nextChangeDate.getDate() + daysRemaining);
+
+    // Determine status based on km
+    let status = 'ok';
+    if (customer.currentOdometer >= targetOdometer) {
+        status = 'overdue';
+    } else if (kmRemaining <= customer.oilInterval * 0.2) {
+        status = 'dueSoon';
+    }
+
+    return {
+        kmDriven,
+        kmRemaining,
+        targetOdometer,
+        nextChangeDate: nextChangeDate.toISOString().split('T')[0],
+        daysRemaining,
+        status
+    };
+}
+
             // Render all customers (with optional search filter)
             renderAllCustomers(searchTerm = '') {
                 const container = document.getElementById('allCustomersList');
